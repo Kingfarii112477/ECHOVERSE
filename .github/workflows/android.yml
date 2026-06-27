@@ -90,20 +90,18 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease
         env:
-          ANDROID_KEYSTORE_PATH: app/echoverse.keystore
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
 
       - name: Build release AAB
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/v')
         working-directory: android
         run: ./gradlew bundleRelease
         env:
-          ANDROID_KEYSTORE_PATH: app/echoverse.keystore
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
 
       - name: Upload release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/v')
