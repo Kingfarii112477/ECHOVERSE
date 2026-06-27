@@ -13,6 +13,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
+// Detect if running inside Capacitor (native Android/iOS)
+const isCapacitor = typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.();
+
 // Auth Operations
 export const authService = {
   async signIn(email: string, password: string) {
@@ -46,11 +49,14 @@ export const authService = {
   },
 
   async signInWithGoogle() {
+    // Use deep link scheme on native Capacitor — web callback on browser
+    const redirectTo = isCapacitor
+      ? 'ai.echoverse.app://auth/callback'
+      : `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-      },
+      options: { redirectTo },
     });
     if (error) throw error;
     return data;
