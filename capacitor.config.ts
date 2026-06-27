@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'ai.echoverse.app',
   appName: 'EchoVerse AI',
   webDir: 'out',
-  bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
     // For development: comment this out for production builds
