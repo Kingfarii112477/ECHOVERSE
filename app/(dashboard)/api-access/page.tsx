@@ -145,23 +145,6 @@ audio = client.generate(
   }'`,
   };
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text.replace(/\*+/g, ''));
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const handleCopyCode = (code: string, id: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(id);
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-
-  const handleDeleteKey = (id: string) => {
-    setApiKeys(apiKeys.filter((key) => key.id !== id));
-  };
-
   const getRateLimitColor = (percentage: number) => {
     if (percentage < 70) return 'bg-green-500';
     if (percentage < 90) return 'bg-yellow-500';
@@ -230,28 +213,28 @@ audio = client.generate(
                   >
                     <td className="py-3 px-4 text-ev-on-surface">{key.name}</td>
                     <td className="py-3 px-4">
-                      <code className="text-ev-primary text-sm font-mono">{key.key}</code>
+                      <code className="text-ev-primary text-sm font-mono">{key.key_prefix}••••••••</code>
                     </td>
-                    <td className="py-3 px-4 text-ev-on-surface-variant">{key.created}</td>
-                    <td className="py-3 px-4 text-ev-on-surface-variant">{key.lastUsed}</td>
+                    <td className="py-3 px-4 text-ev-on-surface-variant">{timeAgo(key.created_at)}</td>
+                    <td className="py-3 px-4 text-ev-on-surface-variant">{timeAgo(key.last_used_at)}</td>
                     <td className="py-3 px-4">
                       <Badge
                         className={cn(
                           'text-xs',
-                          key.status === 'Active'
+                          key.is_active
                             ? 'bg-green-500/20 text-green-400'
                             : 'bg-gray-500/20 text-gray-400'
                         )}
                       >
-                        {key.status}
+                        {key.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleCopy(key.key, key.id)}
+                          onClick={() => handleCopy(key.key_prefix, key.id)}
                           className="p-1.5 hover:bg-ev-surface-high rounded transition-colors"
-                          title="Copy"
+                          title="Copy prefix"
                         >
                           {copiedId === key.id ? (
                             <CheckCircle className="w-4 h-4 text-green-400" />
@@ -291,7 +274,7 @@ audio = client.generate(
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={usageData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#3c494d" />
-              <XAxis dataKey="day" stroke="#859398" />
+              <XAxis dataKey="name" stroke="#859398" />
               <YAxis stroke="#859398" />
               <Tooltip
                 contentStyle={{
@@ -305,145 +288,6 @@ audio = client.generate(
               <Bar dataKey="calls" fill="#00d8ff" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Rate Limits */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-ev-surface border-ev-outline">
-          <CardHeader>
-            <CardTitle className="text-ev-on-surface">Requests per Minute</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-ev-on-surface">
-                  {rateLimits.perMinute.current.toLocaleString()}
-                </span>
-                <span className="text-ev-on-surface-variant">
-                  / {rateLimits.perMinute.max.toLocaleString()}
-                </span>
-              </div>
-              <div className="w-full bg-ev-surface-container rounded-full h-3 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${getRateLimitPercentage(
-                      rateLimits.perMinute.current,
-                      rateLimits.perMinute.max
-                    )}%`,
-                  }}
-                  className={cn(
-                    'h-full rounded-full',
-                    getRateLimitColor(
-                      getRateLimitPercentage(
-                        rateLimits.perMinute.current,
-                        rateLimits.perMinute.max
-                      )
-                    )
-                  )}
-                />
-              </div>
-              <p className="text-sm text-ev-on-surface-variant">
-                {getRateLimitPercentage(
-                  rateLimits.perMinute.current,
-                  rateLimits.perMinute.max
-                ).toFixed(1)}
-                % used
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-ev-surface border-ev-outline">
-          <CardHeader>
-            <CardTitle className="text-ev-on-surface">Requests per Day</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-ev-on-surface">
-                  {rateLimits.perDay.current.toLocaleString()}
-                </span>
-                <span className="text-ev-on-surface-variant">
-                  / {rateLimits.perDay.max.toLocaleString()}
-                </span>
-              </div>
-              <div className="w-full bg-ev-surface-container rounded-full h-3 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${getRateLimitPercentage(
-                      rateLimits.perDay.current,
-                      rateLimits.perDay.max
-                    )}%`,
-                  }}
-                  className={cn(
-                    'h-full rounded-full',
-                    getRateLimitColor(
-                      getRateLimitPercentage(rateLimits.perDay.current, rateLimits.perDay.max)
-                    )
-                  )}
-                />
-              </div>
-              <p className="text-sm text-ev-on-surface-variant">
-                {getRateLimitPercentage(rateLimits.perDay.current, rateLimits.perDay.max).toFixed(
-                  1
-                )}
-                % used
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Webhook Configuration */}
-      <Card className="bg-ev-surface border-ev-outline">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-ev-primary" />
-            <CardTitle className="text-ev-on-surface">Webhooks</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ev-on-surface mb-2">
-                Webhook URL
-              </label>
-              <Input
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://your-domain.com/webhook"
-                className="bg-ev-surface-container border-ev-outline text-ev-on-surface"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ev-on-surface mb-3">Events</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {webhookEvents.map((event) => (
-                  <label key={event.id} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={event.checked}
-                      onChange={(e) =>
-                        setWebhookEvents(
-                          webhookEvents.map((ev) =>
-                            ev.id === event.id ? { ...ev, checked: e.target.checked } : ev
-                          )
-                        )
-                      }
-                      className="w-4 h-4 rounded border-ev-outline bg-ev-surface-container text-ev-primary-container focus:ring-ev-primary"
-                    />
-                    <span className="text-ev-on-surface font-mono text-sm">{event.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <Button className="bg-ev-primary-container text-ev-bg hover:bg-ev-primary">
-              Save Webhook
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -483,79 +327,6 @@ audio = client.generate(
         </div>
       </div>
 
-      {/* Interactive API Docs */}
-      <Card className="bg-ev-surface border-ev-outline">
-        <CardHeader>
-          <CardTitle className="text-ev-on-surface">API Endpoints</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {apiEndpoints.map((endpoint) => (
-              <div key={endpoint.id} className="border border-ev-outline rounded-lg overflow-hidden">
-                <button
-                  onClick={() =>
-                    setExpandedEndpoint(expandedEndpoint === endpoint.id ? null : endpoint.id)
-                  }
-                  className="w-full flex items-center justify-between p-4 hover:bg-ev-surface-container transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      className={cn(
-                        'text-xs font-bold',
-                        endpoint.method === 'GET' && 'bg-green-500/20 text-green-400',
-                        endpoint.method === 'POST' && 'bg-blue-500/20 text-blue-400',
-                        endpoint.method === 'DELETE' && 'bg-red-500/20 text-red-400'
-                      )}
-                    >
-                      {endpoint.method}
-                    </Badge>
-                    <code className="text-ev-primary font-mono">{endpoint.path}</code>
-                    <span className="text-ev-on-surface-variant text-sm">
-                      {endpoint.description}
-                    </span>
-                  </div>
-                  {expandedEndpoint === endpoint.id ? (
-                    <ChevronUp className="w-5 h-5 text-ev-on-surface-variant" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-ev-on-surface-variant" />
-                  )}
-                </button>
-                <AnimatePresence>
-                  {expandedEndpoint === endpoint.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="border-t border-ev-outline"
-                    >
-                      <div className="p-4 space-y-3">
-                        <div>
-                          <h4 className="text-ev-on-surface font-semibold mb-2">Parameters</h4>
-                          <div className="bg-ev-surface-container p-3 rounded">
-                            {endpoint.params.map((param, i) => (
-                              <code key={i} className="text-ev-secondary text-sm block">
-                                {param}
-                                {i < endpoint.params.length - 1 && ','}
-                              </code>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <h4 className="text-ev-on-surface font-semibold mb-2">Response</h4>
-                          <div className="bg-ev-surface-container p-3 rounded">
-                            <code className="text-ev-primary text-sm">{endpoint.response}</code>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Create New Key Modal */}
       {showCreateModal && (
         <Modal onClose={() => setShowCreateModal(false)}>
@@ -573,30 +344,6 @@ audio = client.generate(
                   className="bg-ev-surface-container border-ev-outline text-ev-on-surface"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-ev-on-surface mb-3">
-                  Permissions
-                </label>
-                <div className="space-y-2">
-                  {permissions.map((permission) => (
-                    <label key={permission.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permission.checked}
-                        onChange={(e) =>
-                          setPermissions(
-                            permissions.map((p) =>
-                              p.id === permission.id ? { ...p, checked: e.target.checked } : p
-                            )
-                          )
-                        }
-                        className="w-4 h-4 rounded border-ev-outline bg-ev-surface-container text-ev-primary-container focus:ring-ev-primary"
-                      />
-                      <span className="text-ev-on-surface">{permission.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setShowCreateModal(false)}
@@ -606,9 +353,10 @@ audio = client.generate(
                 </Button>
                 <Button
                   onClick={handleCreateKey}
-                  disabled={!newKeyName.trim()}
+                  disabled={!newKeyName.trim() || isCreating}
                   className="flex-1 bg-ev-primary-container text-ev-bg hover:bg-ev-primary disabled:opacity-50"
                 >
+                  {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Create Key
                 </Button>
               </div>
@@ -637,10 +385,7 @@ audio = client.generate(
             </div>
             <div className="flex gap-3">
               <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedKey);
-                  handleCopyCode(generatedKey, 'generated');
-                }}
+                onClick={() => handleCopyCode(generatedKey, 'generated')}
                 className="flex-1 bg-ev-primary-container text-ev-bg hover:bg-ev-primary"
               >
                 {copiedCode === 'generated' ? (
