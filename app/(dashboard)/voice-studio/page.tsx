@@ -1,5 +1,5 @@
 'use client';
-import { apiUrl } from '/lib/api';
+import { apiUrl } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
