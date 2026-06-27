@@ -2,11 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-// Use service role for webhook processing — no user session available
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 function verifyPaddleSignature(body: string, signature: string, secret: string): boolean {
   try {
@@ -60,6 +61,8 @@ export async function POST(request: NextRequest) {
 
   console.log('Paddle webhook:', eventType);
 
+  const supabase = getSupabase();
+
   try {
     switch (eventType) {
       case 'subscription.created':
@@ -70,7 +73,6 @@ export async function POST(request: NextRequest) {
         const planName = data.items?.[0]?.price?.name?.toLowerCase() || 'free';
         const tier = PLAN_TIERS[planName] || 'free';
 
-        // Look up user by paddle customer id
         const { data: existingSub } = await supabase
           .from('subscriptions')
           .select('user_id')
@@ -94,7 +96,6 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
 
-        // Update user profile tier
         await supabase.from('profiles').update({
           subscription_tier: tier,
           updated_at: new Date().toISOString(),
@@ -126,7 +127,6 @@ export async function POST(request: NextRequest) {
       }
 
       case 'transaction.completed': {
-        // Log billing event
         const customerId = data.customer_id;
         await supabase.from('billing_events').insert([{
           paddle_customer_id: customerId,
