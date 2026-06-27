@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '/lib/api';
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,7 +49,7 @@ export default function APIAccessPage() {
   const loadKeys = useCallback(async () => {
     setIsLoading(true); setError('');
     try {
-      const res = await fetch('/api/keys');
+      const res = await fetch(apiUrl('/api/keys'));
       if (!res.ok) throw new Error('Failed to load keys');
       setApiKeys(await res.json());
     } catch (err: any) { setError(err.message); }
