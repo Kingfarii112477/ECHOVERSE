@@ -26,8 +26,7 @@ jobs:
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
-     
- - name: Remove API routes for static export
+      - name: Remove API routes for static export
         run: |
           rm -rf app/api app/auth
 
