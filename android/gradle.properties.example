@@ -1,0 +1,15 @@
+# Android Keystore Signing Config
+# Copy this to gradle.properties and fill in your values.
+# NEVER commit gradle.properties with real values to version control.
+
+# Release signing
+ECHOVERSE_RELEASE_STORE_FILE=echoverse.keystore
+ECHOVERSE_RELEASE_STORE_PASSWORD=your_store_password
+ECHOVERSE_RELEASE_KEY_ALIAS=echoverse
+ECHOVERSE_RELEASE_KEY_PASSWORD=your_key_password
+
+# To generate a keystore:
+# keytool -genkey -v -keystore echoverse.keystore \
+#   -alias echoverse -keyalg RSA -keysize 2048 -validity 10000 \
+#   -storepass YOUR_STORE_PASSWORD -keypass YOUR_KEY_PASSWORD \
+#   -dname "CN=EchoVerse AI, OU=Mobile, O=EchoVerse, L=Karachi, S=Sindh, C=PK"
