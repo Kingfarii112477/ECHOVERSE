@@ -1,16 +1,19 @@
 name: Android — Build APK & AAB
 
 on:
-  push:
-    branches: [main]
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       build_type:
-        description: 'Build type (debug or release)'
+        description: 'Build type'
         required: true
         default: 'release'
+        type: choice
+        options:
+          - debug
+          - release
+  push:
+    tags:
+      - 'v*'
 
 env:
   NODE_VERSION: '20'
@@ -18,17 +21,20 @@ env:
 
 jobs:
   build-android:
-    name: Build Android APK & AAB
+    name: Build Android
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
@@ -38,9 +44,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
+
       - name: Remove API routes for static export
-        run: |
-          rm -rf app/api app/auth
+        run: rm -rf app/api app/auth
 
       - name: Build Next.js
         run: npm run build
@@ -51,20 +57,38 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Create keystore
-        if: github.event_name != 'pull_request'
+      - name: Enable AndroidX
+        run: |
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+
+      - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/echoverse.keystore
 
+      # ── DEBUG ─────────────────────────────────────────────
       - name: Build debug APK
-        if: github.event.inputs.build_type == 'debug' || github.event_name == 'push'
+        if: github.event.inputs.build_type == 'debug'
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
+      - name: Upload debug APK
+        if: github.event.inputs.build_type == 'debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: echoverse-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      # ── RELEASE ───────────────────────────────────────────
       - name: Build release APK
-        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.build_type == 'release'
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/v')
         working-directory: android
-        run: ./gradlew assembleRelease
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
         env:
           ANDROID_KEYSTORE_PATH: app/echoverse.keystore
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -72,7 +96,7 @@ jobs:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
 
       - name: Build release AAB
-        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.build_type == 'release'
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/v')
         working-directory: android
         run: ./gradlew bundleRelease
         env:
@@ -81,29 +105,23 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
 
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: echoverse-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
-          retention-days: 14
-
       - name: Upload release APK
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: echoverse-release-apk
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 90
 
-      - name: Upload AAB
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Upload release AAB
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: echoverse-release-aab
           path: android/app/build/outputs/bundle/release/*.aab
           retention-days: 90
 
+      # ── GITHUB RELEASE (tags only) ────────────────────────
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
