@@ -27,11 +27,18 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Remove server-only files for static export
+        run: |
+          rm -rf app/api
+          find app -name "route.ts" -delete
+          rm -f middleware.ts
+
       - name: Build Next.js
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_APP_URL: https://localhost
 
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli
