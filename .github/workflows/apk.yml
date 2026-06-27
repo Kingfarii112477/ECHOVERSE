@@ -26,6 +26,7 @@ jobs:
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
+
       - name: Remove API routes for static export
         run: |
           rm -rf app/api app/auth
@@ -36,20 +37,22 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli
-
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Enable AndroidX
+        run: |
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
 
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: echoverse-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: echoverse-release-apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
